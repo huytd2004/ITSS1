@@ -200,7 +200,7 @@ function Home() {
             </Stack>
           </Box>
 
-          <Grid container spacing={{ xs: 2, md: 3 }}>
+          <Grid container spacing={{ xs: 2, md: 4 }}>
             {nearbyPlaces.map((place) => (
               <Grid item xs={12} sm={6} md={3} key={place.id}>
                 <Card
@@ -210,6 +210,7 @@ function Home() {
                     borderRadius: 1.5,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     bgcolor: '#fff',
+                    width: '340px',
                     transition: 'all .3s',
                     cursor: 'pointer',
                     '&:hover': {
