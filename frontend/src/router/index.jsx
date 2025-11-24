@@ -2,6 +2,7 @@ import Layout from "../layouts";
 import Home from "../pages/home";
 import Ranking from "../pages/ranking";
 import Schedule from "../pages/schedule";
+import ScheduleDetail from "../pages/schedule/schedule.detail";
 
 export const Router = [
   {
@@ -13,7 +14,8 @@ export const Router = [
         element: <Home />,
       },
       { path: 'ranking', element: <Ranking /> },
-      { path: 'schedule', element: <Schedule /> }
+      { path: 'schedule', element: <Schedule /> },
+      { path: 'schedule/:id', element: <ScheduleDetail /> }
     ]
   }
 ];
