@@ -53,8 +53,13 @@ const placeSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category"
     },
+    amenities: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Amenity"
+    }],
     images: [imageSchema],
-    age_limit: ageLimitSchema
+    age_limit: ageLimitSchema,
+    
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" }

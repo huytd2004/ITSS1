@@ -1,5 +1,11 @@
-const userRoutes = require('./user.routes');
+const userRouter = require('./user.routes');
+const placeRouter = require('./place.routes'); // Import route place vừa tạo
 
-module.exports = (app) => {
-  app.use('/user', userRoutes);
+function route(app) {
+  // Định nghĩa các prefix cho route
+
+  app.use('/api/users', userRouter);
+  app.use('/api/places', placeRouter);
 }
+
+module.exports = route;
