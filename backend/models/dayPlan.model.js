@@ -4,7 +4,7 @@ const itemSchema = new mongoose.Schema(
   {
     place_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Place"
+      ref: "Place",
     },
     custom_place_name: String,
     start_time: String,
@@ -14,8 +14,8 @@ const itemSchema = new mongoose.Schema(
     note: String,
     caution: String,
     transport: String,
-    cost: String,
-    sort_order: Number
+    cost: Number,
+    sort_order: Number,
   },
   { _id: true }
 );
@@ -25,17 +25,17 @@ const dayPlanSchema = new mongoose.Schema(
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
     title: { type: String, required: true },
     description: String,
     date: Date,
     cover_image: String,
     tags: [String],
-    items: [itemSchema]
+    items: [itemSchema],
   },
   {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" }
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
   }
 );
 
