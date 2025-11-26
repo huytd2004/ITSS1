@@ -3,6 +3,7 @@ import Home from "../pages/home";
 import Ranking from "../pages/ranking";
 import Schedule from "../pages/schedule";
 import ScheduleDetail from "../pages/schedule/schedule.detail";
+import SearchResultPage from "../pages/search/SearchResultPage.jsx";
 
 export const Router = [
   {
@@ -15,7 +16,8 @@ export const Router = [
       },
       { path: 'ranking', element: <Ranking /> },
       { path: 'schedule', element: <Schedule /> },
-      { path: 'schedule/:id', element: <ScheduleDetail /> }
+      { path: 'schedule/:id', element: <ScheduleDetail /> },
+      { path: 'search', element: <SearchResultPage /> }
     ]
   }
 ];

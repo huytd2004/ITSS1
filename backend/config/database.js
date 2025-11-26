@@ -7,5 +7,6 @@ module.exports.connect = async () => {
   }
   catch (error) {
     console.log("Kết nối thất bại!");
+    console.error("Lỗi: ", error.message);
   }
 };
