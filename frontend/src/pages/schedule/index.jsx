@@ -1,9 +1,8 @@
-import { useMemo } from "react";
+import { useEffect,useState} from "react";
 import {
   Avatar,
   Box,
   Button,
-  decomposeColor,
   Divider,
   FormControl,
   FormControlLabel,
@@ -24,91 +23,41 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import SearchIcon from "@mui/icons-material/Search";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import axios from "axios";
 
-const mockPlans = [
-  {
-    id: 1,
-    user: "Hà Thu",
-    avatar: "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=60",
-    likes: 128,
-    cover: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800",
-    title: "Thăm Hồ Gươm + Coffee sáng",
-    price: "0đ - 150.000đ",
-    age: "Từ 5 tuổi",
-    description: "Đi bộ ngắm phố cổ, nhâm nhi cà phê vỉa hè",
-    province: "Hà Nội",
-    area: "Hoàn Kiếm",
-  },
-  {
-    id: 2,
-    user: "An Bình",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=60",
-    likes: 92,
-    cover: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800",
-    title: "Chạy bộ Công viên Thống Nhất",
-    price: "Miễn phí",
-    age: "Từ 12 tuổi",
-    description: "Tham gia lớp zumba, mượn xe đạp công viên",
-    province: "Hà Nội",
-    area: "Hai Bà Trưng",
-  },
-  {
-    id: 3,
-    user: "Minh Đức",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=60",
-    likes: 201,
-    cover: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800",
-    title: "Tản bộ Phố Cổ + Bảo tàng",
-    price: "100.000đ - 250.000đ",
-    age: "Từ 8 tuổi",
-    description: "Ghé Bảo tàng Dân tộc học chụp hình gia đình",
-    province: "Hà Nội",
-    area: "Hoàn Kiếm",
-  },
-  {
-    id: 4,
-    user: "An Nhiên",
-    avatar: "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=60",
-    likes: 184,
-    cover: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800",
-    title: "Thư giãn phố nghệ thuật",
-    price: "120.000đ - 300.000đ",
-    age: "Từ 15 tuổi",
-    description: "Ghé triển lãm, uống trà sách tại toà nhà cổ",
-    province: "Hà Nội",
-    area: "Ba Đình",
-  },
-  {
-    id: 5,
-    user: "Lan Phạm",
-    avatar: "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=60",
-    likes: 74,
-    cover: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800",
-    title: "Ẩm thực đêm Tống Duy Tân",
-    price: "80.000đ - 220.000đ",
-    age: "Từ 18 tuổi",
-    description: "Ăn nhậu nhẹ, thử trà chanh",
-    province: "Hà Nội",
-    area: "Hoàn Kiếm",
-  },
-  {
-    id: 6,
-    user: "Tuấn Khang",
-    avatar: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=60",
-    likes: 156,
-    cover: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800",
-    title: "Góc chill West Lake",
-    price: "150.000đ",
-    age: "Từ 7 tuổi",
-    description: "Check-in cầu Thê Húc, ăn kem Bạch Đằng",
-    province: "Hà Nội",
-    area: "Tây Hồ",
-  },
-];
-//localhost:3000/dayplay/list
 export default function Schedule() {
-  const plans = useMemo(() => mockPlans.slice(0, 6), []);
+  // const plans = useMemo(() => mockPlans.slice(0, 6), []);
+  const [plansData, setPlansData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchDayPlans = async () => {
+      console.log("Fetching day plans from API... Page:", page);
+      try {
+        setLoading(true);
+        const response = await axios.get("http://localhost:3000/api/day-plans", {
+          params: { page }
+        });
+        setPlansData(response.data?.data ?? []);
+        setTotalPages(response.data?.pagination?.totalPages ?? 1);
+        console.log("Fetched day plans:", response.data);
+      } catch (error) {
+        console.error("Failed to fetch day plans", error?.response ?? error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDayPlans();
+  }, [page]);
+
+  const handlePageChange = (event, value) => {
+    setPage(value);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
   return (
     <Box sx={{ px: { xs: 2, md: 4 }, py: 3, bgcolor: "#f2f4f7" }}>
       <Box sx={{ mb: 3 }}>
@@ -137,8 +86,21 @@ export default function Schedule() {
 
       <Grid container spacing={3}  columns={12}>
         <Grid item xs={12} md={9} sx={{ flex: 1 }}>
-          <Grid container spacing={3} sx={{marginBottom: 2}}>
-            {plans.map((plan) => (
+          {loading ? (
+            <Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
+              <Typography variant="body1" color="text.secondary">
+                Đang tải dữ liệu...
+              </Typography>
+            </Stack>
+          ) : plansData.length === 0 ? (
+            <Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
+              <Typography variant="body1" color="text.secondary">
+                Không có lịch trình nào
+              </Typography>
+            </Stack>
+          ) : (
+            <Grid container spacing={3} sx={{marginBottom: 2}}>
+            {plansData.map((plan) => (
               <Grid
                 item
                 xs={12}
@@ -167,12 +129,12 @@ export default function Schedule() {
                     >
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Avatar
-                          src={plan.avatar}
-                          alt={plan.user}
+                          src={plan.user.avatar}
+                          alt={plan.user.fullName}
                           sx={{ width: 40, height: 40 }}
                         />
                         <Typography variant="subtitle1" fontWeight={600}>
-                          {plan.user}
+                          {plan.user.fullName}
                         </Typography>
                       </Stack>
                       <Stack direction="row" alignItems="center" spacing={0.5}>
@@ -203,7 +165,7 @@ export default function Schedule() {
                         {plan.title}
                       </Typography>
                       <Typography variant="body2" sx={{ color: "#374151" }}>
-                        {plan.description_description_description_description}
+                        {plan.description}
                       </Typography>
                       <Stack direction="column" spacing={0.3} sx={{ pt: 1 }}>
                         <Typography variant="caption" sx={{ color: "#6b7280" }}>
@@ -215,10 +177,10 @@ export default function Schedule() {
                               color: "#1976d2",
                             }}
                           />
-                          {plan.province} · {plan.area}
+                          {plan.province[0]} · {plan.area[0]}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "#6b7280" }}>
-                          Giá: {plan.price}
+                          Giá: {plan.price_range}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "#6b7280" }}>
                           Độ tuổi: {plan.age}
@@ -244,20 +206,26 @@ export default function Schedule() {
                       Xem ngay
                     </Button>
                     <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-                      #{plan.area.replace(/\s+/g, "")}
+                      #{plan.area[0].replace(/\s+/g, "")}
                     </Typography>
                   </Stack>
                 </Paper>
               </Grid>
             ))}
           </Grid>
+          )}
 
           {/* Pagination */}
-          <Grid item xs={12}>
-            <Stack direction="row" justifyContent="center">
-              <Pagination count={2} color="primary" />
-            </Stack>
-          </Grid>
+          <Stack direction="row" justifyContent="center" sx={{ mt: 4 }}>
+            <Pagination 
+              count={totalPages} 
+              page={page}
+              onChange={handlePageChange}
+              color="primary" 
+              showFirstButton 
+              showLastButton
+            />
+          </Stack>
         </Grid>
 
         <Grid item xs={12} md={3} >
