@@ -13,7 +13,7 @@ exports.searchPlaces = async (req, res) => {
 
     // Tạo query cơ bản (chưa có location)
     const baseQuery = {};
-
+    
     // 1. Tìm kiếm theo từ khóa
     if (keyword) {
       baseQuery.name = { $regex: keyword, $options: "i" };
@@ -84,7 +84,7 @@ exports.searchPlaces = async (req, res) => {
     // --- BƯỚC 1: LẤY DANH SÁCH PLACE ---
     let places;
     let total = 0;
-    const selectFields = "name images price_range category_id amenities location age_limit address"; 
+    const selectFields = "name images price_range category_id amenities location age_limit address description"; 
 
     if (view === 'map') {
       // Map view dùng findQuery ($near)
@@ -132,6 +132,7 @@ exports.searchPlaces = async (req, res) => {
         name: place.name,
         thumbnail: place.images && place.images.length > 0 ? place.images[0].url : null, 
         images: place.images,
+        description: place.description,
         price_range: place.price_range,
         category: place.category_id,
         amenities: place.amenities,

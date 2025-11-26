@@ -1,9 +1,29 @@
 import { AppBar, Toolbar, Stack, IconButton, Button, Box, InputBase, alpha, Divider } from '@mui/material'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import SearchIcon from '@mui/icons-material/Search'
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react';
 
 const Header = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Hàm xử lý khi form tìm kiếm được submit (nhấn Enter hoặc bấm nút)
+  const handleSearch = (e) => {
+      e.preventDefault(); // Ngăn chặn trình duyệt reload trang
+
+      if (searchTerm.trim()) {
+          // Chuyển hướng đến /search và truyền từ khóa qua query parameter (?q=...)
+          navigate(`/search?keyword=${searchTerm.trim()}`);
+          console.log("Searching for:",`/search?keyword=${searchTerm.trim()}`);
+
+      } else {
+          // Nếu không nhập gì, chuyển hướng về trang /search
+          navigate('/search');
+      }
+      // Tùy chọn: clear input sau khi tìm kiếm
+      // setSearchTerm(''); 
+  };
   return (
     <AppBar position="static" elevation={0} sx={{ bgcolor: 'primary.main' }}>
       <Toolbar sx={{ minHeight: 68, gap: 3 }}>
@@ -45,6 +65,8 @@ const Header = () => {
         {/* Center search box grows */}
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
           <Box
+            component="form"
+            onSubmit={handleSearch}
             sx={(theme) => ({
               display: 'flex',
               alignItems: 'center',
@@ -63,6 +85,7 @@ const Header = () => {
           >
             <SearchIcon fontSize="small" />
             <InputBase
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm kiếm..."
               inputProps={{ 'aria-label': 'search' }}
               sx={{ flex: 1, fontSize: 14 }}
