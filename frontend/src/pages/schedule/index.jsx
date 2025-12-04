@@ -102,16 +102,16 @@ export default function Schedule() {
         price_min = 0;
         price_max = 0;
         break;
-      case "0-200k":
+      case "0-150k":
         price_min = 0;
-        price_max = 200000;
+        price_max = 15000;
         break;
-      case "200k-500k":
-        price_min = 200000;
-        price_max = 500000;
+      case "150k-600k":
+        price_min = 150000;
+        price_max = 600000;
         break;
-      case "500k-1m":
-        price_min = 500000;
+      case "250k-1m":
+        price_min = 250000;
         price_max = 1000000;
         break;
       case "1m+":
@@ -444,21 +444,21 @@ export default function Schedule() {
                     sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
                   />
                   <FormControlLabel
-                    value="0-200k"
+                    value="0-150k"
                     control={<Radio size="small" />}
-                    label="0đ - 200.000đ"
+                    label="0đ - 150.000đ"
                     sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
                   />
                   <FormControlLabel
-                    value="200k-500k"
+                    value="150k-600k"
                     control={<Radio size="small" />}
-                    label="200.000đ - 500.000đ"
+                    label="150.000đ - 600.000đ"
                     sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
                   />
                   <FormControlLabel
-                    value="500k-1m"
+                    value="250k-1m"
                     control={<Radio size="small" />}
-                    label="500.000đ - 1.000.000đ"
+                    label="250.000đ - 1.000.000đ"
                     sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
                   />
                   <FormControlLabel

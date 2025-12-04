@@ -1,0 +1,220 @@
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  TextField,
+  Button,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  Paper
+} from '@mui/material';
+import { toast } from 'react-toastify';
+import Header from '../../components/header';
+import { login } from '../../services/user.services';
+import { setCookie } from '../../helpers/cookies.helper';
+
+function Login() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Validation
+      if (!email || !password) {
+        toast.error('Vui lòng nhập đầy đủ email và mật khẩu');
+        setLoading(false);
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error('Email không hợp lệ');
+        setLoading(false);
+        return;
+      }
+
+      // Call API
+      const option = {
+        email: email.trim(),
+        password: password,
+      };
+
+      const response = await login(option);
+      console.log('Login response:', response);
+      if (response && response.token) {
+        // Lưu token vào cookies
+        const expiryDays = rememberMe ? 30 : 1;
+        setCookie('token', response.token, expiryDays);
+        
+        // Lưu user info nếu có
+        if (response.data) {
+          setCookie('fullName', response.data.fullName, expiryDays);
+        }
+
+        toast.success('Đăng nhập thành công!');
+        
+        // Chuyển hướng sau 1 giây
+        setTimeout(() => {
+          navigate('/');
+        }, 1000);
+      } else {
+        toast.error(response.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+    <Header />
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f5f5',
+        py: 4
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper
+          elevation={10}
+          sx={{
+            p: 4,
+            borderRadius: 3,
+            backgroundColor: 'white'
+          }}
+        >
+          {/* Title */}
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+            align="center"
+            sx={{
+              fontWeight: 700,
+              color: 'primary.main',
+              mb: 4
+            }}
+          >
+            Đăng nhập
+          </Typography>
+
+          {/* Form */}
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            {/* Email Input */}
+            <TextField
+              fullWidth
+              label="Gmail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              margin="normal"
+              required
+              autoFocus
+              sx={{ mb: 2 }}
+            />
+
+            {/* Password Input */}
+            <TextField
+              fullWidth
+              label="Mật khẩu"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              margin="normal"
+              required
+              sx={{ mb: 2 }}
+            />
+
+            {/* Remember Me Checkbox and Forgot Password */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Nhớ mật khẩu"
+              />
+              <Link
+                to="/forgot-password"
+                style={{
+                  color: '#667eea',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  fontSize: '16px'
+                }}
+              >
+                Quên mật khẩu?
+              </Link>
+            </Box>
+
+            {/* Login Button */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={loading}
+              sx={{
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: 16,
+                textTransform: 'none',
+                borderRadius: 2,
+                mb: 3,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5568d3 0%, #64387d 100%)'
+                },
+                '&:disabled': {
+                  background: '#ccc',
+                  color: '#666'
+                }
+              }}
+            >
+              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </Button>
+
+            {/* Register Link */}
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Chưa có tài khoản?{' '}
+                <Link
+                  to="/register"
+                  style={{
+                    color: '#667eea',
+                    fontWeight: 600,
+                    textDecoration: 'none'
+                  }}
+                >
+                  Đăng ký
+                </Link>
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+    </>
+  );
+}
+
+export default Login;
