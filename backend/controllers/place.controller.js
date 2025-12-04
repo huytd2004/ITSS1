@@ -5,15 +5,15 @@ const Amenity = require("../models/amenity.model");
 
 exports.searchPlaces = async (req, res) => {
   try {
-    const { 
-      keyword, category_ids, amenity_ids, age_ranges, 
-      lat, lng, radius, 
-      page = 1, limit = 10, view = 'list' 
+    const {
+      keyword, category_ids, amenity_ids, age_ranges,
+      lat, lng, radius,
+      page = 1, limit = 8, view = 'list'
     } = req.query;
 
     // Tạo query cơ bản (chưa có location)
     const baseQuery = {};
-    
+
     // 1. Tìm kiếm theo từ khóa
     if (keyword) {
       baseQuery.name = { $regex: keyword, $options: "i" };
@@ -43,13 +43,13 @@ exports.searchPlaces = async (req, res) => {
           "age_limit.max": { $gte: minAge }
         };
       });
-      
+
       if (ageConditions.length > 0) {
         if (baseQuery.$or) {
-           baseQuery.$and = [ { $or: baseQuery.$or }, { $or: ageConditions } ];
-           delete baseQuery.$or;
+          baseQuery.$and = [{ $or: baseQuery.$or }, { $or: ageConditions }];
+          delete baseQuery.$or;
         } else {
-           baseQuery.$or = ageConditions;
+          baseQuery.$or = ageConditions;
         }
       }
     }
@@ -60,31 +60,31 @@ exports.searchPlaces = async (req, res) => {
 
     // 5. Bộ lọc Khoảng cách
     if (lat && lng && radius) {
-        const userLat = parseFloat(lat);
-        const userLng = parseFloat(lng);
-        const radiusInKm = parseFloat(radius);
+      const userLat = parseFloat(lat);
+      const userLng = parseFloat(lng);
+      const radiusInKm = parseFloat(radius);
 
-        // Query cho FIND: Dùng $near để sắp xếp gần nhất
-        findQuery["location.coordinates"] = { 
-          $near: { 
-            $geometry: { type: "Point", coordinates: [userLng, userLat] }, 
-            $maxDistance: radiusInKm * 1000 // Đổi ra mét
-          } 
-        };
+      // Query cho FIND: Dùng $near để sắp xếp gần nhất
+      findQuery["location.coordinates"] = {
+        $near: {
+          $geometry: { type: "Point", coordinates: [userLng, userLat] },
+          $maxDistance: radiusInKm * 1000 // Đổi ra mét
+        }
+      };
 
-        // Query cho COUNT: Dùng $geoWithin để đếm (tránh lỗi sort)
-        // $centerSphere nhận bán kính theo đơn vị radian (km / 6378.1)
-        countQuery["location.coordinates"] = {
-          $geoWithin: {
-            $centerSphere: [ [userLng, userLat], radiusInKm / 6378.1 ]
-          }
-        };
+      // Query cho COUNT: Dùng $geoWithin để đếm (tránh lỗi sort)
+      // $centerSphere nhận bán kính theo đơn vị radian (km / 6378.1)
+      countQuery["location.coordinates"] = {
+        $geoWithin: {
+          $centerSphere: [[userLng, userLat], radiusInKm / 6378.1]
+        }
+      };
     }
 
     // --- BƯỚC 1: LẤY DANH SÁCH PLACE ---
     let places;
     let total = 0;
-    const selectFields = "name images price_range category_id amenities location age_limit address description"; 
+    const selectFields = "name images price_range category_id amenities location age_limit address description";
 
     if (view === 'map') {
       // Map view dùng findQuery ($near)
@@ -97,7 +97,7 @@ exports.searchPlaces = async (req, res) => {
       total = places.length;
     } else {
       const skip = (parseInt(page) - 1) * parseInt(limit);
-      
+
       // List view dùng findQuery ($near)
       places = await Place.find(findQuery)
         .populate("category_id", "name icon")
@@ -115,12 +115,12 @@ exports.searchPlaces = async (req, res) => {
     const placeIds = places.map(p => p._id);
     const reviewsStats = await Review.aggregate([
       { $match: { place_id: { $in: placeIds } } },
-      { 
-        $group: { 
-          _id: "$place_id", 
+      {
+        $group: {
+          _id: "$place_id",
           avgRating: { $avg: "$rating" },
           count: { $sum: 1 }
-        } 
+        }
       }
     ]);
 
@@ -130,7 +130,7 @@ exports.searchPlaces = async (req, res) => {
       return {
         _id: place._id,
         name: place.name,
-        thumbnail: place.images && place.images.length > 0 ? place.images[0].url : null, 
+        thumbnail: place.images && place.images.length > 0 ? place.images[0].url : null,
         images: place.images,
         description: place.description,
         price_range: place.price_range,
@@ -176,17 +176,17 @@ exports.getPlaceDetail = async (req, res) => {
     }
 
     // 2. Tính toán Rating trung bình & Tổng review
-    const mongoose = require("mongoose"); 
+    const mongoose = require("mongoose");
     const currentPlaceId = new mongoose.Types.ObjectId(id); // Tạo ObjectId chuẩn
 
     const reviewStats = await Review.aggregate([
       { $match: { place_id: currentPlaceId } },
-      { 
-        $group: { 
-          _id: "$place_id", 
+      {
+        $group: {
+          _id: "$place_id",
           avgRating: { $avg: "$rating" },
           count: { $sum: 1 }
-        } 
+        }
       }
     ]);
 
@@ -198,12 +198,12 @@ exports.getPlaceDetail = async (req, res) => {
     const categoryId = place.category_id._id;
 
     const relatedPlaces = await Place.find({
-      category_id: categoryId, 
+      category_id: categoryId,
       _id: { $ne: currentPlaceId } // So sánh ObjectId chuẩn để loại trừ chính xác
     })
-    .select("name images price_range address rating") 
-    .limit(5) 
-    .exec();
+      .select("name images price_range address rating")
+      .limit(5)
+      .exec();
 
     // Format lại related places để có thumbnail
     const formattedRelated = relatedPlaces.map(p => ({
@@ -215,8 +215,8 @@ exports.getPlaceDetail = async (req, res) => {
     }));
 
     // 4. Trả về kết quả
-    const placeData = place.toObject(); 
-    
+    const placeData = place.toObject();
+
     res.status(200).json({
       success: true,
       data: {
@@ -230,7 +230,7 @@ exports.getPlaceDetail = async (req, res) => {
   } catch (error) {
     console.error("Get Detail Error:", error);
     if (error.name === 'CastError') {
-        return res.status(400).json({ success: false, message: "ID địa điểm không hợp lệ" });
+      return res.status(400).json({ success: false, message: "ID địa điểm không hợp lệ" });
     }
     res.status(500).json({ success: false, message: "Lỗi server khi lấy chi tiết địa điểm" });
   }
