@@ -5,8 +5,20 @@ import Schedule from "../pages/schedule";
 import ScheduleDetail from "../pages/schedule/schedule.detail";
 import SearchResultPage from "../pages/search/SearchResultPage.jsx";
 import PlaceDetail from '../pages/place/PlaceDetail.jsx';
+import Login from "../pages/login";
+import Register from "../pages/register";
+import Profile from "../pages/profile";
+import PrivateRoutes from "./private.router";
 
 export const Router = [
+  {
+    path: '/login',
+    element: <Login />
+  },
+  {
+    path: '/register',
+    element: <Register />
+  },
   {
     path: '/',
     element: <Layout />,
@@ -19,7 +31,16 @@ export const Router = [
       { path: 'schedule', element: <Schedule /> },
       { path: 'schedule/:id', element: <ScheduleDetail /> },
       { path: 'places/:id', element: <PlaceDetail /> },
-      { path: 'search', element: <SearchResultPage /> }
+      { path: 'search', element: <SearchResultPage /> },
+      {
+        element: <PrivateRoutes />,
+        children: [
+          { 
+            path: '/profile',
+            element: <Profile />
+           }
+        ],
+      },
     ]
   }
 ];

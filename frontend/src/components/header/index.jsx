@@ -1,28 +1,38 @@
-import { AppBar, Toolbar, Stack, IconButton, Button, Box, InputBase, alpha, Divider } from '@mui/material'
+import { AppBar, Toolbar, Stack, IconButton, Button, Box, InputBase, alpha, Divider, Avatar, Typography } from '@mui/material'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import SearchIcon from '@mui/icons-material/Search'
+import NotificationsIcon from '@mui/icons-material/Notifications'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react';
+import { getCookie, deleteCookie } from '../../helpers/cookies.helper';
 
 const Header = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const token = getCookie('token');
+  const fullName = getCookie('fullName');
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
 
   // Hàm xử lý khi form tìm kiếm được submit (nhấn Enter hoặc bấm nút)
   const handleSearch = (e) => {
-      e.preventDefault(); // Ngăn chặn trình duyệt reload trang
+    e.preventDefault(); // Ngăn chặn trình duyệt reload trang
 
-      if (searchTerm.trim()) {
-          // Chuyển hướng đến /search và truyền từ khóa qua query parameter (?q=...)
-          navigate(`/search?keyword=${searchTerm.trim()}`);
-          console.log("Searching for:",`/search?keyword=${searchTerm.trim()}`);
+    if (searchTerm.trim()) {
+      // Chuyển hướng đến /search và truyền từ khóa qua query parameter (?q=...)
+      navigate(`/search?keyword=${searchTerm.trim()}`);
+      console.log("Searching for:", `/search?keyword=${searchTerm.trim()}`);
 
-      } else {
-          // Nếu không nhập gì, chuyển hướng về trang /search
-          navigate('/search');
-      }
-      // Tùy chọn: clear input sau khi tìm kiếm
-      // setSearchTerm(''); 
+    } else {
+      // Nếu không nhập gì, chuyển hướng về trang /search
+      navigate('/search');
+    }
+    // Tùy chọn: clear input sau khi tìm kiếm
+    // setSearchTerm(''); 
   };
   return (
     <AppBar position="static" elevation={0} sx={{ bgcolor: 'primary.main' }}>
@@ -93,39 +103,93 @@ const Header = () => {
           </Box>
         </Box>
 
-        {/* Auth buttons */}
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Button
-            size="small"
-            variant="outlined"
-            color="inherit"
-            sx={{
-              px: 2,
-              borderRadius: 8,
-              textTransform: 'none',
-              fontWeight: 600,
-              borderColor: alpha('#fff', 0.6),
-              '&:hover': { borderColor: '#fff', backgroundColor: alpha('#fff', 0.15) }
-            }}
-          >
-            Đăng nhập
-          </Button>
-          <Button
-            size="small"
-            variant="contained"
-            sx={{
-              px: 2,
-              borderRadius: 8,
-              textTransform: 'none',
-              fontWeight: 600,
-              background: 'linear-gradient(135deg,#ab47bc,#7e57c2)',
-              boxShadow: 'none',
-              '&:hover': { boxShadow: 'none', background: 'linear-gradient(135deg,#9c27b0,#673ab7)' }
-            }}
-          >
-            Đăng ký
-          </Button>
-        </Stack>
+        {/* Auth buttons or User Menu */}
+        {token ? (
+          <Stack direction="row" spacing={0.5} alignItems="center">
+
+            {/* User Profile Box - Avatar + Name */}
+            <Box
+              onClick={handleProfileClick}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 1.5,
+                py: 0.75,
+                cursor: 'pointer',
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'white',
+                  fontSize: 14
+                }}
+              >
+                {fullName || 'User'}
+              </Typography>
+              <IconButton
+                size="small"
+                sx={{
+                  bgcolor: alpha('#fff', 0.12),
+                  '&:hover': { bgcolor: alpha('#fff', 0.25) },
+                  p: 0.5
+                }}
+              >
+                <AccountCircleIcon sx={{ color: 'white', fontSize: 28 }} />
+              </IconButton>
+            </Box>
+            {/* Notification Icon */}
+            <IconButton
+              color="inherit"
+              size="small"
+              sx={{
+                bgcolor: alpha('#fff', 0.12),
+                '&:hover': { bgcolor: alpha('#fff', 0.25) }
+              }}
+            >
+              <NotificationsIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        ) : (
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Button
+              component={Link}
+              to="/login"
+              size="small"
+              variant="outlined"
+              color="inherit"
+              sx={{
+                px: 2,
+                borderRadius: 8,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: alpha('#fff', 0.6),
+                '&:hover': { borderColor: '#fff', backgroundColor: alpha('#fff', 0.15) }
+              }}
+            >
+              Đăng nhập
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              component={Link}
+              to="/register"
+              sx={{
+                px: 2,
+                borderRadius: 8,
+                textTransform: 'none',
+                fontWeight: 600,
+                background: 'linear-gradient(135deg,#ab47bc,#7e57c2)',
+                boxShadow: 'none',
+                '&:hover': { boxShadow: 'none', background: 'linear-gradient(135deg,#9c27b0,#673ab7)' }
+              }}
+            >
+              Đăng ký
+            </Button>
+          </Stack>
+        )}
       </Toolbar>
     </AppBar>
   )
