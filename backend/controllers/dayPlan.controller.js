@@ -35,25 +35,16 @@ module.exports.list = async (req, res) => {
       filter.tags = { $in: tagArray };
     }
 
-    // Pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    // Get day plans with populated data
-    const dayPlans = await DayPlan.find(filter)
+    // Get ALL day plans that match basic filters (we'll filter by price/age/location later)
+    const allDayPlans = await DayPlan.find(filter)
       .populate("user_id", "fullName avatar")
       .populate("items.place_id")
-      .skip(skip)
-      .limit(limitNum)
       .sort({ created_at: -1 })
       .lean();
 
-    const total = await DayPlan.countDocuments(filter);
-
-    // Process each day plan to get required output
-    const results = await Promise.all(
-      dayPlans.map(async (dayPlan) => {
+    // Process and filter each day plan
+    const processedPlans = await Promise.all(
+      allDayPlans.map(async (dayPlan) => {
         // Count likes for this day plan
         const likesCount = await Like.countDocuments({
           day_plan_id: dayPlan._id,
@@ -173,52 +164,41 @@ module.exports.list = async (req, res) => {
           }
         }
 
-        // Filter by price range - khoảng giá của dayPlan phải nằm trong khoảng user yêu cầu
+        // Filter by price range
         if ((price_min || price_max) && shouldInclude) {
           const minPrice = price_min ? parseInt(price_min) : 0;
           const maxPrice = price_max ? parseInt(price_max) : Infinity;
 
-          // Check if dayPlan's price range [totalMinPrice, totalMaxPrice] fits within requested range [minPrice, maxPrice]
           if (hasPrice) {
             // DayPlan's range must be within requested range
             if (totalMinPrice < minPrice || totalMaxPrice > maxPrice) {
               shouldInclude = false;
             }
-          } else {
-            // If dayPlan is free, it fits any budget
-            // Free (0) is always within any price range
           }
         }
 
-        // Filter by age limit - giao tuổi của dayPlan phải nằm trong tuổi user yêu cầu
+        // Filter by age limit
         if ((age_min !== undefined || age_max !== undefined) && shouldInclude) {
           const minAge = age_min !== undefined ? parseInt(age_min) : 0;
           const maxAge = age_max !== undefined ? parseInt(age_max) : Infinity;
 
-          // Check if dayPlan's age intersection [ageMin, ageMax] fits within requested range [minAge, maxAge]
           if (ageMin !== null && ageMax !== null) {
-            // There is an age intersection
             if (ageMax < ageMin) {
-              // No valid intersection (incompatible)
               shouldInclude = false;
             } else {
-              // Check if dayPlan's age intersection fits within requested range
               if (ageMin < minAge || ageMax > maxAge) {
                 shouldInclude = false;
               }
             }
           } else if (ageMin !== null) {
-            // Only lower bound exists
             if (ageMin < minAge) {
               shouldInclude = false;
             }
           } else if (ageMax !== null) {
-            // Only upper bound exists
             if (ageMax > maxAge) {
               shouldInclude = false;
             }
           }
-          // If both ageMin and ageMax are null, it means "Mọi lứa tuổi" - always include (fits any age range)
         }
 
         if (!shouldInclude) {
@@ -245,19 +225,26 @@ module.exports.list = async (req, res) => {
     );
 
     // Filter out null results (filtered items)
-    const filteredResults = results.filter((r) => r !== null);
+    const allFilteredResults = processedPlans.filter((r) => r !== null);
 
-    const totalPages = Math.ceil(total / limitNum);
+    // NOW apply pagination to filtered results
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const paginatedResults = allFilteredResults.slice(skip, skip + limitNum);
+    const totalFiltered = allFilteredResults.length;
+    const totalPages = Math.ceil(totalFiltered / limitNum);
 
     return res.status(200).json({
       message: "Lấy danh sách thành công",
-      data: filteredResults,
+      data: paginatedResults,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        totalPages,
-        filteredCount: filteredResults.length,
+        total: allDayPlans.length,
+        totalFiltered: totalFiltered,
+        totalPages: totalPages,
       },
     });
   } catch (err) {
@@ -345,9 +332,9 @@ module.exports.detail = async (req, res) => {
     // Check if current user has liked (if authenticated)
     const isLiked = req.user?._id
       ? !!(await Like.exists({
-          day_plan_id: dayPlan._id,
-          user_id: req.user._id,
-        }))
+        day_plan_id: dayPlan._id,
+        user_id: req.user._id,
+      }))
       : false;
 
     // Calculate total price range from items

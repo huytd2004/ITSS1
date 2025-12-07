@@ -74,7 +74,10 @@ export default function Schedule() {
           params
         });
         setPlansData(response.data?.data ?? []);
+        
+        // Use totalPages from backend (now calculated based on filtered results)
         setTotalPages(response.data?.pagination?.totalPages ?? 1);
+        
         console.log("Fetched day plans:", response.data);
       } catch (error) {
         console.error("Failed to fetch day plans", error?.response ?? error);
