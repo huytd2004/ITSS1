@@ -5,7 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Grid, Box, Container, Typography, Pagination, TextField, Button, Paper, Stack, IconButton } from '@mui/material';
 import SpotCard from '../../components/spot-card';
-import FilterSidebar from '../../components/filter-sidebar';
+import FilterSidebar from './FilterSidebar';
 import SearchInputSidebar from '../../components/filter-sidebar/SearchInputSidebar';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -17,8 +17,14 @@ const SearchResultPage = () => {
     const urlKeyword = searchParams.get('keyword'); // Lấy keyword từ URL
     const [spots, setSpots] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filterState, setFilterState] = useState({});
     const [viewMode, setViewMode] = useState('list');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalResults, setTotalResults] = useState(0);
+    const [filterState, setFilterState] = useState({});
+    const [tempFilterState, setTempFilterState] = useState({});
+
+
 
     useEffect(() => {
         const fetchSpots = async () => {
@@ -42,6 +48,10 @@ const SearchResultPage = () => {
                     }
                 }
 
+                params.append('page', page);
+                params.append('limit', 9);
+
+
                 // BƯỚC 4: Xây dựng URL cuối cùng
                 const queryString = params.toString();
                 const apiUrlWithQuery = `${API_URL}${queryString ? '?' + queryString : ''}`;
@@ -49,7 +59,9 @@ const SearchResultPage = () => {
                 console.log("URL truy vấn hợp nhất:", apiUrlWithQuery);
 
                 const response = await axios.get(apiUrlWithQuery);
-                setSpots(response.data.data || response.data);
+                setSpots(response.data.data);
+                setTotalPages(response.data.pagination.totalPages);
+                setTotalResults(response.data.pagination.total);
                 setLoading(false);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu:", error);
@@ -59,7 +71,7 @@ const SearchResultPage = () => {
 
         // useEffect chạy lại khi URL params (bao gồm keyword) thay đổi HOẶC filterState thay đổi
         fetchSpots();
-    }, [urlKeyword, filterState]);
+    }, [urlKeyword, filterState, page]);
 
     if (loading) {
         return (
@@ -103,7 +115,16 @@ const SearchResultPage = () => {
                             <SearchInputSidebar />
 
                             {/* 2. BỘ LỌC CHÍNH */}
-                            <FilterSidebar filterState={filterState} setFilterState={setFilterState} />
+                            <FilterSidebar
+                                tempFilterState={tempFilterState}
+                                setTempFilterState={setTempFilterState}
+                                onApply={() => setFilterState(tempFilterState)}
+                                onReset={() => {
+                                    setTempFilterState({});
+                                    setFilterState({});
+                                }}
+                            />
+
                         </Stack>
                     </Grid>
 
@@ -114,7 +135,7 @@ const SearchResultPage = () => {
                             {/* Tiêu đề và List/Map Toggle */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                                 <Typography variant="body1" color="textSecondary" fontWeight={600}>
-                                    Tìm thấy {spots.length} địa điểm cho: "{urlKeyword || "Tất cả"}"
+                                    Tìm thấy {totalResults} địa điểm
                                 </Typography>
 
                                 {/* Cập nhật nút LIST/MAP để quản lý state viewMode */}
@@ -143,9 +164,9 @@ const SearchResultPage = () => {
                                     {spots.map((spot) => (
                                         <Grid
                                             item
-                                            xs={12}      // 1 thẻ / hàng
-                                            sm={6}       // 2 thẻ / hàng
-                                            lg={3}       // 4 thẻ / hàng (lg=3 vì 12/3=4)
+                                            xs={12}
+                                            sm={6}
+                                            md={4}
                                             key={spot.id}
                                             // Đặt align-items: "stretch" để đảm bảo các thẻ cao bằng nhau
                                             sx={{ display: "flex", alignItems: "stretch" }}
@@ -231,6 +252,25 @@ const SearchResultPage = () => {
                                                                     </Stack>
                                                                 )}
 
+                                                                {/* Mô tả */}
+                                                                {spot.description && (
+                                                                    <Typography
+                                                                    variant="caption"
+                                                                    color="text.secondary"
+                                                                    sx={{
+                                                                        display: 'block',
+                                                                        lineHeight: 1.4,
+                                                                        maxHeight: 40,
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis'
+                                                                    }}
+                                                                    >
+                                                                    {spot.description.length > 60
+                                                                        ? spot.description.slice(0, 60) + '...'
+                                                                        : spot.description}
+                                                                    </Typography>
+                                                                )}
+
                                                                 {/* Giá */}
                                                                 <Typography variant="body2" color="text.secondary">
                                                                     💰 {spot.price_range}
@@ -260,7 +300,7 @@ const SearchResultPage = () => {
                             {/* Pagination (Chỉ hiển thị trong List View) */}
                             {viewMode === 'list' && (
                                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, pb: 2 }}>
-                                    <Pagination count={10} color="primary" page={1} />
+                                    <Pagination count={totalPages} color="primary" page={page} onChange={(event, value) => setPage(value)} />
                                 </Box>
                             )}
                         </Paper>

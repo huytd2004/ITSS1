@@ -34,7 +34,8 @@ const PlaceDetail = () => {
             try {
                 const detailResponse = await axios.get(`http://localhost:3000/api/places/${id}`);
                 const place = detailResponse.data.data;
-                const reviewsResponse = await axios.get(`http://localhost:3000/api/reviews/${id}?limit=2`); // Lấy 2 review mẫu
+                const reviewsResponse = await axios.get(`http://localhost:3000/api/reviews/place/${id}?limit=2`);
+
 
                 setPlaceData(place);
                 setReviews(reviewsResponse.data.data);
@@ -60,12 +61,11 @@ const PlaceDetail = () => {
 
     return (
         <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", py: 4 }}>
-            <Container maxWidth="xl">
+            <Container maxWidth="xl" sx={{ ml: 6 }}>
                 
                 {/* Mục 1: Tiêu đề và Rating */}
                 <Stack direction="row" alignItems="flex-end" spacing={2} sx={{ mb: 2 }}>
                     <Typography variant="h4" fontWeight={700}>{name}</Typography>
-                    <Typography variant="h6" color="text.secondary">({rating} ⭐)</Typography>
                 </Stack>
                 
                 {/* 2. Body - Chia 2 cột */}

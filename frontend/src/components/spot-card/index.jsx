@@ -1,120 +1,134 @@
 import * as React from 'react';
-import { Card, CardMedia, CardContent, Typography, IconButton, Box, Button } from '@mui/material'; // Thêm Button
+import {
+  Card,
+  CardMedia,
+  CardContent,
+  Typography,
+  IconButton,
+  Box,
+  Button,
+  Stack
+} from '@mui/material';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import StarIcon from '@mui/icons-material/Star';
 import { useNavigate } from 'react-router-dom';
 
-// Component hiển thị chi tiết 1 địa điểm
 const SpotCard = ({ spot }) => {
   const navigate = useNavigate();
 
-  // Hàm xử lý điều hướng đến trang chi tiết
   const handleDetailClick = () => {
-      // Sử dụng ID của địa điểm (spot._id) để xây dựng URL
-      navigate(`/places/${spot._id}`);
+    navigate(`/places/${spot._id}`);
   };
 
-  return (
-    <Card 
-        sx={{ 
-            width: '250px', 
-            position: 'relative', 
-            height: 400, 
-            display: 'flex', 
-            flexDirection: 'column',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
-        }}
-    >
-      
-      {/* Nút Yêu thích (Wireframe Mục 7) */}
-      <IconButton 
-        sx={{ 
-          position: 'absolute', 
-          top: 8, 
-          right: 8, 
-          color: 'white', 
-          backgroundColor: 'rgba(0, 0, 0, 0.4)',
-          zIndex: 10
-        }}
-      >
-        <FavoriteBorderIcon />
-      </IconButton>
-      
-      {/* Hình ảnh */}
-      <CardMedia
-        component="img"
-        height="140"
-        image={spot.thumbnail || 'https://via.placeholder.com/250x140?text=No+Image'}
+  const getImageUrl = () => {
+    if (spot.thumbnail) return spot.thumbnail;
+    if (spot.images && spot.images.length > 0) {
+      const firstImage = spot.images[0];
+      return typeof firstImage === 'string' ? firstImage : firstImage.url;
+    }
+    return 'https://via.placeholder.com/250x160?text=No+Image';
+  };
 
-        alt={spot.name}
-      />
-      
-      {/* CardContent */}
-      <CardContent 
-            sx={{ 
-                flexGrow: 1, 
-                display: 'flex', 
-                flexDirection: 'column',
-                // Loại bỏ justifyContent để nội dung ở gần nhau
-            }}
-        > 
-            {/* Phần Tên, Rating, Giá */}
-            <Box sx={{ flexGrow: 1 }}> {/* Bao quanh nội dung chính để đẩy Button xuống */}
-                {/* Tên */}
-                <Typography 
-                    gutterBottom 
-                    variant="h6" 
-                    component="div" 
-                    sx={{ 
-                        fontWeight: 'bold', 
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: '2',
-                        WebkitBoxOrient: 'vertical',
-                    }}
-                >
-                  {spot.name || "Địa điểm mới"}
-                </Typography>
-            
-                {/* Rating */}
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <StarIcon sx={{ color: 'gold', fontSize: 18, mr: 0.5 }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {spot.rating || '0'} ({spot.reviews || '0'} reviews)
-                  </Typography>
-                </Box>
-                {/* Description */}
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {spot.description || 'Chưa có mô tả'}
-                  </Typography>
-                </Box>
-                {/* Giá */}
-                <Typography variant="body1" color="primary" sx={{ mb: 2 }}>
-                  {spot.price_range || 'Chưa rõ giá'}
-                </Typography>
-            </Box>
-            
-            {/* Nút Chi tiết (Wireframe Mụsc 6: 詳細を見る) */}
-            <Button 
-                variant="contained" 
-                size="small" 
-                fullWidth
-                onClick={handleDetailClick}
-                sx={{ 
-                    textTransform: 'none', 
-                    fontWeight: 'bold',
-                    // Đặt màu xanh dương đồng bộ
-                    bgcolor: '#1976d2', 
-                    '&:hover': { bgcolor: '#1565c0' } 
-                }}
-            >
-                Chi tiết
-            </Button>
-      </CardContent>
-    </Card>
-  );
+  return (
+    <Card
+      sx={{
+        width: 348,
+        height: 400, // Đảm bảo card chiếm toàn bộ chiều cao
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        borderRadius: 2,
+        transition: 'transform 0.2s',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 8px 16px rgba(0,0,0,0.12)'
+        }
+      }}
+    >
+      {/* Ảnh */}
+      <CardMedia
+        component="img"
+        height="160"
+        image={getImageUrl()}
+        alt={spot.name || 'No name'}
+        sx={{ objectFit: 'cover' }}
+      />
+
+      {/* Nội dung */}
+      <CardContent
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between', // Đảm bảo nút nằm dưới
+          p: 2
+        }}
+      >
+        {/* Tên + Tim */}
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={700}
+            sx={{
+              lineHeight: 1.3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: '2',
+              WebkitBoxOrient: 'vertical',
+              mr: 1
+            }}
+          >
+            {spot.name || 'Địa điểm chưa có tên'}
+          </Typography>
+          <IconButton size="small" sx={{ p: 0.5, mt: -0.5 }} aria-label="Yêu thích">
+            <FavoriteBorderIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+
+        {/* Rating */}
+        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
+          <StarIcon sx={{ color: 'gold', fontSize: 18 }} />
+          <Typography variant="body2" fontWeight={600}>
+            {spot.rating || 0}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ({spot.total_reviews || 0} đánh giá)
+          </Typography>
+        </Stack>
+
+        {/* Giá + Mô tả */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="primary" fontWeight={500} sx={{ mb: 0.5 }}>
+            💰 {spot.price_range || 'Liên hệ'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.4 }}>
+            {spot.description
+              ? spot.description.length > 50
+                ? spot.description.slice(0, 50) + '...'
+                : spot.description
+              : ''}
+          </Typography>
+        </Box>
+
+        {/* Nút chi tiết */}
+        <Button
+          variant="outlined"
+          size="small"
+          fullWidth
+          onClick={handleDetailClick}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 2,
+            mt: 'auto' // Đẩy nút xuống cuối
+          }}
+        >
+          Xem chi tiết
+        </Button>
+      </CardContent>
+    </Card>
+  );
 };
 
 export default SpotCard;
