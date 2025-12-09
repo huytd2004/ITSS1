@@ -301,6 +301,20 @@ function Profile() {
                       </IconButton>
 
                       {/* Image */}
+                      {/* <CardMedia
+                        component="img"
+                        image=""
+                        alt="No Image"
+                        sx={{
+                          height: 180,
+                          bgcolor: '#e0e0e0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Typography color="text.secondary">画像</Typography>
+                      </CardMedia> */}
                       <CardMedia
                         component="div"
                         sx={{
@@ -311,7 +325,13 @@ function Profile() {
                           justifyContent: 'center'
                         }}
                       >
-                        <Typography color="text.secondary">画像</Typography>
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : null /* Không cần Typography nữa */}
                       </CardMedia>
 
                       <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
