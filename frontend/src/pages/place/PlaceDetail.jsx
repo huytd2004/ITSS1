@@ -16,6 +16,12 @@ import PeopleIcon from '@mui/icons-material/People';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 // import L from 'leaflet'; // Không cần thiết trừ khi bạn chỉnh sửa icon marker mặc định
+import { getCookie } from '../../helpers/cookies.helper';
+import {
+    addFavoritePlace,
+    removeFavoritePlace,
+    checkFavoritePlace,
+} from '../../services/favorite.services';
 
 // Component chính
 const PlaceDetail = () => {
@@ -25,6 +31,7 @@ const PlaceDetail = () => {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isFavorite, setIsFavorite] = useState(false);
 
     // Lấy dữ liệu
     useEffect(() => {
@@ -33,11 +40,26 @@ const PlaceDetail = () => {
             setError(null);
             try {
                 const detailResponse = await axios.get(`http://localhost:3000/api/places/${id}`);
-                const place = detailResponse.data.data;
-                const reviewsResponse = await axios.get(`http://localhost:3000/api/reviews/${id}?limit=2`); // Lấy 2 review mẫu
+                const respData = detailResponse.data;
+                const place = respData?.data || respData;
+                const reviewsResponse = await axios.get(`http://localhost:3000/api/reviews/place/${id}?limit=2`);
 
                 setPlaceData(place);
                 setReviews(reviewsResponse.data.data);
+
+                // Nếu đã đăng nhập, kiểm tra trạng thái favorite
+                try {
+                    const userStr = getCookie('user');
+                    if (userStr) {
+                        const user = JSON.parse(userStr);
+                        const chk = await checkFavoritePlace(user._id, id);
+                        if (chk && chk.data && typeof chk.data.is_favorite !== 'undefined') {
+                            setIsFavorite(!!chk.data.is_favorite);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to check favorite', e);
+                }
             } catch (err) {
                 console.error("Fetch Detail Error:", err);
                 setError("Không thể tải chi tiết địa điểm. Vui lòng kiểm tra ID.");
@@ -60,12 +82,11 @@ const PlaceDetail = () => {
 
     return (
         <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", py: 4 }}>
-            <Container maxWidth="xl">
+            <Container maxWidth="xl" sx={{ ml: 6 }}>
                 
                 {/* Mục 1: Tiêu đề và Rating */}
                 <Stack direction="row" alignItems="flex-end" spacing={2} sx={{ mb: 2 }}>
                     <Typography variant="h4" fontWeight={700}>{name}</Typography>
-                    <Typography variant="h6" color="text.secondary">({rating} ⭐)</Typography>
                 </Stack>
                 
                 {/* 2. Body - Chia 2 cột */}
@@ -179,14 +200,35 @@ const PlaceDetail = () => {
 
                                     <Divider />
                                     
-                                    {/* Nút Thêm yêu thích */}
+                                    {/* Nút Thêm/Bỏ yêu thích */}
                                     <Stack direction="row" spacing={1}>
-                                        <Button 
-                                            variant="outlined" 
+                                        <Button
+                                            variant={isFavorite ? 'contained' : 'outlined'}
+                                            color={isFavorite ? 'error' : 'primary'}
                                             startIcon={<FavoriteBorderIcon />}
                                             sx={{ textTransform: 'none', flexGrow: 1 }}
+                                            onClick={async () => {
+                                                const userStr = getCookie('user');
+                                                if (!userStr) {
+                                                    alert('Vui lòng đăng nhập để sử dụng chức năng này');
+                                                    return;
+                                                }
+                                                const user = JSON.parse(userStr);
+                                                try {
+                                                    if (isFavorite) {
+                                                        await removeFavoritePlace(user._id, id);
+                                                        setIsFavorite(false);
+                                                    } else {
+                                                        await addFavoritePlace(user._id, id);
+                                                        setIsFavorite(true);
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Toggle favorite error', err);
+                                                    alert('Có lỗi xảy ra khi cập nhật yêu thích');
+                                                }
+                                            }}
                                         >
-                                            Thêm Yêu thích
+                                            {isFavorite ? 'Bỏ Yêu thích' : 'Thêm Yêu thích'}
                                         </Button>
                                     </Stack>
                                 </Stack>
