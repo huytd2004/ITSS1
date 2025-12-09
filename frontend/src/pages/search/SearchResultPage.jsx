@@ -42,7 +42,10 @@ const SearchResultPage = () => {
 
                 // BƯỚC 3: Thêm các bộ lọc khác từ filterState (age, price,...)
                 for (const key in filterState) {
-                    const value = filterState[key];
+                    let value = filterState[key];
+                    if (Array.isArray(value)) {
+                      value = value.join(','); // chuyển mảng thành chuỗi phân cách bởi dấu phẩy
+                    }
                     if (value && value.trim() && value !== 'all') {
                         params.append(key, value.trim());
                     }
@@ -281,7 +284,7 @@ const SearchResultPage = () => {
                                                                     size="small"
                                                                     variant="contained"
                                                                     color="primary"
-                                                                    onClick={() => navigate(`/place/${spot._id}`)}
+                                                                    onClick={() => navigate(`/places/${spot._id}`)}
                                                                     sx={{ mt: 1, textTransform: 'none' }}
                                                                 >
                                                                     Xem chi tiết
