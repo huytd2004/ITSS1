@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, FormGroup,FormControl,InputLabel,Select,MenuItem, FormControlLabel, Checkbox,
   RadioGroup, Radio, Slider, Divider, Button
 } from '@mui/material';
+import axios from 'axios';
 
 const FilterSidebar = ({ tempFilterState, setTempFilterState, onApply, onReset }) => {
+  const [categories, setCategories] = useState([]);
+  const [amenities, setAmenities] = useState([]);
+
+    useEffect(() => {
+    axios.get('http://localhost:3000/api/places/filters')
+      .then(res => {
+        setCategories(res.data.data.categories || []);
+        setAmenities(res.data.data.amenities || []);
+      });
+  }, []);
+
   const handleChange = (key, value) => {
     setTempFilterState(prev => ({ ...prev, [key]: value }));
   };
-
 
   return (
     <Box
@@ -40,20 +51,13 @@ const FilterSidebar = ({ tempFilterState, setTempFilterState, onApply, onReset }
       <FormControl fullWidth sx={{ mt: 2 }}>
         <Select
           labelId="category-label"
-          value={tempFilterState.category_ids || ''}
+          value={tempFilterState.category_ids || 'all'}
           onChange={(e) => handleChange('category_ids', e.target.value)}
         >
           <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value="Khu vui chơi trong nhà">Khu vui chơi trong nhà</MenuItem>
-          <MenuItem value="Công viên ngoài trời">Công viên ngoài trời</MenuItem>
-          <MenuItem value="Sở thú">Sở thú</MenuItem>
-          <MenuItem value="Trang trại">Trang trại</MenuItem>
-          <MenuItem value="Bảo tàng">Bảo tàng</MenuItem>
-          <MenuItem value="Khu giáo dục">Khu giáo dục</MenuItem>
-          <MenuItem value="Trải nghiệm STEM">Trải nghiệm STEM</MenuItem>
-          <MenuItem value="Khu thể thao">Khu thể thao</MenuItem>
-          <MenuItem value="Khu vui chơi giải trí">Khu vui chơi giải trí</MenuItem>
-          <MenuItem value="Quán có khu chơi trẻ em">Ăn uống – quán cafe có khu chơi trẻ em</MenuItem>
+          {categories.map(c => (
+            <MenuItem key={c._id} value={c._id}>{c.name}</MenuItem>
+          ))}
         </Select>
       </FormControl>
       <Divider sx={{ my: 2 }} />
@@ -63,7 +67,7 @@ const FilterSidebar = ({ tempFilterState, setTempFilterState, onApply, onReset }
       <FormControl fullWidth sx={{ mt: 2 }}>
         <Select
         labelId="district-label"
-        value={tempFilterState.districts || ''}
+        value={tempFilterState.districts || 'all'}
         onChange={(e) => handleChange('districts', e.target.value)}
         >
         <MenuItem value="all">Tất cả</MenuItem>
@@ -76,7 +80,7 @@ const FilterSidebar = ({ tempFilterState, setTempFilterState, onApply, onReset }
       <Divider sx={{ my: 2 }} />
 
       {/* Giá */}
-      <Typography variant="subtitle2">Khoảng giá</Typography>
+      <Typography variant="subtitle2" fontWeight="bold">Khoảng giá</Typography>
       <RadioGroup
         value={tempFilterState.price_filter || 'all'}
         onChange={(e) => handleChange('price_filter', e.target.value)}
@@ -94,7 +98,7 @@ const FilterSidebar = ({ tempFilterState, setTempFilterState, onApply, onReset }
       <FormControl fullWidth sx={{ mt: 2 }}>
         <Select
         labelId="open-time-label"
-        value={tempFilterState.open_time || ''}
+        value={tempFilterState.open_time || 'all'}
         onChange={(e) => handleChange('open_time', e.target.value)}
         >
         <MenuItem value="all">Tất cả</MenuItem>
@@ -123,25 +127,26 @@ const FilterSidebar = ({ tempFilterState, setTempFilterState, onApply, onReset }
       <Typography variant="subtitle2" fontWeight="bold">Tiện ích đi kèm</Typography>
       <FormControl fullWidth sx={{ mt: 2 }}>
         <Select
-            labelId="amenities-label"
-            multiple
-            value={tempFilterState.amenity_ids || []}
-            onChange={(e) => handleChange('amenity_ids', e.target.value)}
-            renderValue={(selected) => (
+          labelId="amenities-label"
+          multiple
+          value={tempFilterState.amenity_ids || []}
+          onChange={(e) => handleChange('amenity_ids', e.target.value)}
+          renderValue={(selected) => (
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                {selected.map((value) => (
-                <Typography key={value} variant="body2">{value}</Typography>
-                ))}
+              {selected.map((value) => {
+                const amenity = amenities.find(a => a._id === value);
+                return (
+                  <Typography key={value} variant="body2">
+                    {amenity ? amenity.name : value}
+                  </Typography>
+                );
+              })}
             </Box>
-            )}
+          )}
         >
-            {[
-            "Có nhà để xe","Nhà vệ sinh","Khu thay tã","Khu nghỉ / quán cà phê dành cho phụ huynh",
-            "Nhà hàng / khu ăn uống","Hỗ trợ xe đẩy cho bé","Phòng y tế","Điều hòa","Wi-Fi",
-            "Lối đi cho người khuyết tật","Khu để đồ / tủ khóa","Khu vực an toàn cho trẻ"
-            ].map(a => (
-            <MenuItem key={a} value={a}>{a}</MenuItem>
-            ))}
+          {amenities.map(a => (
+            <MenuItem key={a._id} value={a._id}>{a.name}</MenuItem>
+          ))}
         </Select>
       </FormControl>
       <Divider sx={{ my: 2 }} />
