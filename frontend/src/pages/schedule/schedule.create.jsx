@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './schedule.create.css';
+import { toast } from 'react-toastify';
 
 const CLOUDINARY_UPLOAD_PRESET = 'itss1_upload'; // Thay bằng preset của bạn
 const CLOUDINARY_CLOUD_NAME = 'dxudvl25z'; // Thay bằng cloud name của bạn
@@ -190,12 +191,12 @@ const ScheduleCreate = () => {
     try {
       // Validate form
       if (!formData.title.trim()) {
-        alert('Vui lòng nhập tiêu đề');
+        toast.error('Vui lòng nhập tiêu đề');
         return;
       }
 
       if (formData.items.length === 0) {
-        alert('Vui lòng thêm ít nhất một item vào kế hoạch');
+        toast.error('Vui lòng thêm ít nhất một item vào kế hoạch');
         return;
       }
 
@@ -247,7 +248,7 @@ const ScheduleCreate = () => {
         throw new Error(result.message || 'Có lỗi xảy ra');
       }
 
-      alert('Tạo kế hoạch thành công!');
+      toast.success('Tạo kế hoạch thành công!');
       console.log('Created day plan:', result.data);
       
       // Reset form
