@@ -17,6 +17,9 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import HomeIcon from "@mui/icons-material/Home";
@@ -38,6 +41,14 @@ import { getCookie } from '../../helpers/cookies.helper';
 import { likeDayPlan, unlikeDayPlan, checkLikeDayPlan } from '../../services/favorite.services';
 
 const API_BASE_URL = "http://localhost:3000/api";
+
+// Fix Leaflet default marker icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 // Mock data cho lịch trình - sẽ được thay thế bằng dữ liệu từ API
 // const scheduleDataMock = {
@@ -287,6 +298,8 @@ function ScheduleDetail() {
   const [expandedDesc, setExpandedDesc] = useState({});
   const [expandedNote, setExpandedNote] = useState({});
   const [relatedPlaces, setRelatedPlaces] = useState([]);
+  const [mapCenter, setMapCenter] = useState([21.0285, 105.8542]); // Default: Hanoi
+  const [mapZoom, setMapZoom] = useState(13);
 
   // Fetch schedule data from API
   useEffect(() => {
@@ -353,14 +366,69 @@ function ScheduleDetail() {
               const placesResponses = await Promise.all(placesPromises);
               const places = placesResponses
                 .map(res => res.data?.data)
-                .filter(place => place) // Filter out failed requests
-                .map(place => ({
-                  id: place._id,
-                  name: place.name,
-                  image: place.images?.[0]?.url || "https://via.placeholder.com/300",
-                  category: place.category_id?.name || "Địa điểm"
-                }));
-              setRelatedPlaces(places);
+                .filter(place => place); // Filter out failed requests
+              
+              // Calculate age range intersection
+              let ageRangeText = rawData.target_age || "Mọi lứa tuổi";
+              if (places.length > 0) {
+                const ageRanges = places
+                  .filter(place => place.age_limit && place.age_limit.min !== undefined && place.age_limit.max !== undefined)
+                  .map(place => place.age_limit);
+                
+                if (ageRanges.length > 0) {
+                  // Find intersection of all age ranges
+                  const minAge = Math.max(...ageRanges.map(range => range.min));
+                  const maxAge = Math.min(...ageRanges.map(range => range.max));
+                  
+                  if (minAge <= maxAge) {
+                    if (minAge === 0 && maxAge >= 100) {
+                      ageRangeText = "Mọi lứa tuổi";
+                    } else if (minAge === maxAge) {
+                      ageRangeText = `${minAge} tuổi`;
+                    } else {
+                      ageRangeText = `Từ ${minAge} - ${maxAge} tuổi`;
+                    }
+                  } else {
+                    ageRangeText = "Không có khoảng tuổi phù hợp chung";
+                  }
+                }
+              }
+              
+              // Update transformedData with calculated age range
+              transformedData.overview.age = ageRangeText;
+              setScheduleData(transformedData);
+              
+              // Set related places for display with coordinates
+              const relatedPlacesData = places.map(place => ({
+                id: place._id,
+                name: place.name,
+                image: place.images?.[0]?.url || "https://via.placeholder.com/300",
+                category: place.category_id?.name || "Địa điểm",
+                location: place.location // Include location coordinates
+              }));
+              setRelatedPlaces(relatedPlacesData);
+              
+              // Calculate map center from places with valid coordinates
+              const placesWithCoords = relatedPlacesData.filter(
+                place => place.location?.coordinates && 
+                Array.isArray(place.location.coordinates) && 
+                place.location.coordinates.length === 2
+              );
+              
+              if (placesWithCoords.length > 0) {
+                const avgLat = placesWithCoords.reduce((sum, place) => 
+                  sum + place.location.coordinates[1], 0) / placesWithCoords.length;
+                const avgLng = placesWithCoords.reduce((sum, place) => 
+                  sum + place.location.coordinates[0], 0) / placesWithCoords.length;
+                setMapCenter([avgLat, avgLng]);
+                
+                // Adjust zoom based on spread of locations
+                if (placesWithCoords.length === 1) {
+                  setMapZoom(15);
+                } else {
+                  setMapZoom(13);
+                }
+              }
             } catch (err) {
               console.error('Error fetching related places:', err);
             }
@@ -566,10 +634,10 @@ function ScheduleDetail() {
                   </Stack>
         </Stack>
 
-        {/* Horizontal Timeline Overview */}
+        {/* Timeline Overview */}
         <Paper
           sx={{
-            mb: 2,
+            mb: 3,
             p: 3,
             overflowX: "auto",
             bgcolor: "#fff",
@@ -580,7 +648,7 @@ function ScheduleDetail() {
             sx={{
               position: "relative",
               minWidth: "max-content",
-              height: 180,
+              height: 140,
               display: "flex",
               alignItems: "center",
             }}
@@ -592,8 +660,8 @@ function ScheduleDetail() {
                 left: 60,
                 right: 60,
                 top: "50%",
-                height: 2,
-                bgcolor: "#333",
+                height: 3,
+                bgcolor: "#1976d2",
                 zIndex: 0,
               }}
             />
@@ -609,161 +677,164 @@ function ScheduleDetail() {
               }}
             >
               {/* Start Point - Home */}
-              <Stack alignItems="center" spacing={0.5} sx={{ zIndex: 1, minWidth: 80 }}>
-                <HomeIcon sx={{ fontSize: 40, color: "#333" }} />
-                <Typography variant="caption" fontWeight={600} sx={{ color: "#333", fontSize: "0.75rem" }}>
+              <Stack alignItems="center" spacing={1} sx={{ zIndex: 1, minWidth: 100 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    bgcolor: "#4caf50",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 8px rgba(76,175,80,0.4)",
+                    border: "3px solid #fff",
+                  }}
+                >
+                  <HomeIcon sx={{ color: "#fff", fontSize: 26 }} />
+                </Box>
+                <Typography variant="caption" fontWeight={700} sx={{ color: "#333", fontSize: "0.8rem" }}>
                   自宅
                 </Typography>
               </Stack>
 
-              {/* All timeline items with transport text between */}
-              {scheduleData.timeline.map((item, index) => {
-                const isAbove = index % 2 === 0;
-                
-                return (
-                  <React.Fragment key={item.id}>
-                    {/* Transport Text before location point */}
+              {/* Timeline items with transport icons between */}
+              {scheduleData.timeline.map((item, index) => (
+                <React.Fragment key={item.id}>
+                  {/* Transport Icon */}
+                  <Box sx={{ zIndex: 1, minWidth: 60, display: 'flex', justifyContent: 'center' }}>
                     <Box
                       sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        bgcolor: "#fff",
+                        border: "2px solid #1976d2",
                         display: "flex",
-                        alignItems: isAbove ? "flex-start" : "flex-end",
-                        justifyContent: "center",
-                        minWidth: 100,
-                        position: "relative",
-                      }}
-                    >
-                      <Stack 
-                        alignItems="center" 
-                        spacing={0.3} 
-                        sx={{ 
-                          mt: isAbove ? 1 : 0,
-                          mb: isAbove ? 0 : 1,
-                        }}
-                      >
-                        {/* Transport Icon */}
-                        <Box sx={{ order: isAbove ? 2 : 1 }}>
-                          {getTransportIcon(item.transport)}
-                        </Box>
-                        {/* Transport Text */}
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#333",
-                            fontSize: "0.65rem",
-                            order: isAbove ? 1 : 2,
-                          }}
-                        >
-                          {item.transportText}
-                        </Typography>
-                      </Stack>
-                    </Box>
-
-                    {/* Location Point */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
-                        zIndex: 1,
-                        position: "relative",
-                        minWidth: 120,
+                        justifyContent: "center",
                       }}
                     >
-                      <Stack
-                        alignItems="center"
-                        spacing={0.5}
-                        sx={{
-                          position: "absolute",
-                          top: isAbove ? "-80px" : "20px",
-                          minWidth: 120,
-                        }}
-                      >
-                        {/* Time - positioned based on location */}
-                        <Typography
-                          variant="caption"
-                          fontWeight={600}
-                          sx={{
-                            color: "#333",
-                            fontSize: "0.75rem",
-                            order: isAbove ? 1 : 2,
-                          }}
-                        >
-                          {item.time}
-                        </Typography>
+                      {getTransportIcon(item.transport)}
+                    </Box>
+                  </Box>
 
-                        {/* Location Icon with optional warning */}
-                        <Tooltip title={item.note || ""} arrow placement="top">
-                          <Box
-                            sx={{
-                              position: "relative",
-                              cursor: item.note ? "pointer" : "default",
-                              order: isAbove ? 2 : 1,
-                            }}
-                          >
-                            <LocationOnIcon
-                              sx={{
-                                fontSize: 40,
-                                color: "#333",
-                              }}
-                            />
-                            {item.hasWarning && (
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  bottom: 2,
-                                  right: -6,
-                                  width: 18,
-                                  height: 18,
-                                  borderRadius: "50%",
-                                  bgcolor: "#333",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  border: "2px solid #fff",
-                                }}
-                              >
-                                <Typography sx={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>!</Typography>
-                              </Box>
-                            )}
-                          </Box>
-                        </Tooltip>
+                  {/* Location Point */}
+                  <Stack alignItems="center" spacing={0.5} sx={{ zIndex: 1, minWidth: 100, position: 'relative' }}>
+                    {/* Time above */}
+                    <Typography
+                      variant="caption"
+                      fontWeight={600}
+                      sx={{
+                        color: "#1976d2",
+                        fontSize: "0.75rem",
+                        mb: 0.5
+                      }}
+                    >
+                      {item.time}
+                    </Typography>
 
-                        {/* Location Name */}
-                        <Typography
-                          variant="caption"
-                          align="center"
-                          sx={{
-                            maxWidth: 120,
-                            fontSize: "0.7rem",
-                            lineHeight: 1.2,
-                            wordBreak: "break-word",
-                            color: "#333",
-                            order: 3,
-                          }}
-                        >
-                          {item.name}
-                        </Typography>
-                      </Stack>
-
-                      {/* Dot on the line */}
+                    {/* Location Icon with warning badge */}
+                    <Box sx={{ position: 'relative' }}>
                       <Box
                         sx={{
-                          width: 12,
-                          height: 12,
+                          width: 48,
+                          height: 48,
                           borderRadius: "50%",
-                          bgcolor: "#333",
-                          border: "2px solid #fff",
+                          bgcolor: "#1976d2",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 2px 8px rgba(25,118,210,0.4)",
+                          border: "3px solid #fff",
                         }}
-                      />
+                      >
+                        <LocationOnIcon sx={{ color: "#fff", fontSize: 26 }} />
+                      </Box>
+                      
+                      {/* Warning Badge */}
+                      {item.hasWarning && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: -4,
+                            right: -4,
+                            width: 20,
+                            height: 20,
+                            borderRadius: "50%",
+                            bgcolor: "#ff9800",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "2px solid #fff",
+                            zIndex: 2
+                          }}
+                        >
+                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>!</Typography>
+                        </Box>
+                      )}
+
+                      {/* Location Number */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: -4,
+                          right: -4,
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          bgcolor: '#333',
+                          color: '#fff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          border: '2px solid #fff'
+                        }}
+                      >
+                        {index + 1}
+                      </Box>
                     </Box>
-                  </React.Fragment>
-                );
-              })}
+
+                    {/* Location Name below */}
+                    <Typography
+                      variant="caption"
+                      align="center"
+                      sx={{
+                        maxWidth: 100,
+                        fontSize: "0.7rem",
+                        lineHeight: 1.2,
+                        wordBreak: "break-word",
+                        color: "#333",
+                        fontWeight: 500,
+                        mt: 0.5
+                      }}
+                    >
+                      {item.name}
+                    </Typography>
+                  </Stack>
+                </React.Fragment>
+              ))}
 
               {/* End Point - Home */}
-              <Stack alignItems="center" spacing={0.5} sx={{ zIndex: 1, minWidth: 80 }}>
-                <HomeIcon sx={{ fontSize: 40, color: "#333" }} />
-                <Typography variant="caption" fontWeight={600} sx={{ color: "#333", fontSize: "0.75rem" }}>
+              <Stack alignItems="center" spacing={1} sx={{ zIndex: 1, minWidth: 100 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    bgcolor: "#f44336",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 8px rgba(244,67,54,0.4)",
+                    border: "3px solid #fff",
+                  }}
+                >
+                  <HomeIcon sx={{ color: "#fff", fontSize: 26 }} />
+                </Box>
+                <Typography variant="caption" fontWeight={700} sx={{ color: "#333", fontSize: "0.8rem" }}>
                   帰宅
                 </Typography>
               </Stack>
@@ -1022,15 +1093,69 @@ function ScheduleDetail() {
                 <Box
                   sx={{
                     width: "100%",
-                    height: 250,
-                    bgcolor: "#e0e0e0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    height: 300,
                     borderRadius: 2,
+                    overflow: "hidden",
+                    "& .leaflet-container": {
+                      height: "100%",
+                      width: "100%",
+                      borderRadius: 2,
+                    }
                   }}
                 >
-                  <Typography color="text.secondary">Bản đồ</Typography>
+                  {relatedPlaces.length > 0 ? (
+                    <MapContainer
+                      center={mapCenter}
+                      zoom={mapZoom}
+                      scrollWheelZoom={false}
+                      style={{ height: '100%', width: '100%' }}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      {relatedPlaces
+                        .filter(place => 
+                          place.location?.coordinates && 
+                          Array.isArray(place.location.coordinates) && 
+                          place.location.coordinates.length === 2
+                        )
+                        .map((place, index) => (
+                          <Marker
+                            key={place.id}
+                            position={[
+                              place.location.coordinates[1], // latitude
+                              place.location.coordinates[0]  // longitude
+                            ]}
+                          >
+                            <Popup>
+                              <Box sx={{ minWidth: 150 }}>
+                                <Typography variant="subtitle2" fontWeight={600}>
+                                  {place.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {place.category}
+                                </Typography>
+                              </Box>
+                            </Popup>
+                          </Marker>
+                        ))
+                      }
+                    </MapContainer>
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        bgcolor: "#e0e0e0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Typography color="text.secondary">Không có dữ liệu bản đồ</Typography>
+                    </Box>
+                  )}
                 </Box>
               </Paper>
             </Stack>
