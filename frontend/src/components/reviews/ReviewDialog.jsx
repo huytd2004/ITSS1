@@ -94,13 +94,15 @@ const ReviewDialog = ({ open, onClose, placeId, onReviewSuccess }) => {
     };
 
     const isFormValid = () => {
-        if (rating === 0) return false;
-        return FACILITY_KEYS.every(key => facilities[key] !== '');
+        // Chỉ cần rating > 0 thì gửi được, hoặc facilities chọn hết
+        const hasRating = rating > 0;
+        const allFacilitiesSelected = FACILITY_KEYS.every(key => facilities[key] !== '');
+        return hasRating || allFacilitiesSelected;
     };
 
     const handleSubmit = async () => {
         if (!isFormValid()) {
-            setError('すべての項目を入力してください');
+            setError('星評価を選択するか、すべてのサービスレビューを選択してください');
             return;
         }
 

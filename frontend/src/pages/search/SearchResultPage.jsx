@@ -112,8 +112,8 @@ const SearchResultPage = () => {
                 <Grid container spacing={3}>
 
                     {/* Cột 1: Sidebar Filter (MD: 3) */}
-                    <Grid item xs={12} md={3}>
-                        <Stack spacing={3}>
+                    <Grid item xs={12} md={3} sx={{ display: "flex" }}>
+                        <Stack spacing={3} sx={{ width: "100%", height: "100%" }}>
                             {/* 1. THANH TÌM KIẾM KEYWORD MỚI */}
                             <SearchInputSidebar />
 

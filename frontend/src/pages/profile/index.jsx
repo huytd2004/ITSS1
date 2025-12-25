@@ -192,10 +192,10 @@ function Profile() {
     <>
       <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 2 }}>
         <Container maxWidth="xl">
-          <Grid container spacing={3}>
+          <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
             {/* Left Sidebar - 3 parts */}
-            <Grid item xs={12} md={3}>
-              <Card sx={{ p: 3, position: 'sticky', top: 20 }}>
+            <Grid item xs={12} md={3} sx={{ display: 'flex' }}>
+              <Card sx={{ p: 3, position: 'sticky', top: 20, width: '100%', display: 'flex', flexDirection: 'column' }}>
                 {/* Profile Section */}
                 <Box sx={{ textAlign: 'center', mb: 3 }}>
                   <Avatar
