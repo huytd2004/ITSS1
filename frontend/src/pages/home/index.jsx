@@ -186,7 +186,7 @@ function Home() {
                 <LocationOnIcon sx={{ color: '#fff' }} />
               </Box>
               <Typography variant="h5" fontWeight={700} sx={{ color: '#333' }}>
-                Địa điểm gần bạn
+                近くのポイント
               </Typography>
             </Stack>
 
@@ -303,7 +303,7 @@ function Home() {
                 }
               }}
             >
-              Xem tất cả
+              すべて表示
             </Button>
           </Box>
         </Container>
