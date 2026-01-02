@@ -79,7 +79,7 @@ const SearchResultPage = () => {
     if (loading) {
         return (
             <Container maxWidth="xl" sx={{ mt: 4 }}>
-                <Typography variant="h5" align="center">Đang tải dữ liệu...</Typography>
+                <Typography variant="h5" align="center">読み込み中...</Typography>
             </Container>
         );
     }
@@ -112,8 +112,8 @@ const SearchResultPage = () => {
                 <Grid container spacing={3}>
 
                     {/* Cột 1: Sidebar Filter (MD: 3) */}
-                    <Grid item xs={12} md={3}>
-                        <Stack spacing={3}>
+                    <Grid item xs={12} md={3} sx={{ display: "flex" }}>
+                        <Stack spacing={3} sx={{ width: "100%", height: "100%" }}>
                             {/* 1. THANH TÌM KIẾM KEYWORD MỚI */}
                             <SearchInputSidebar />
 
@@ -138,7 +138,7 @@ const SearchResultPage = () => {
                             {/* Tiêu đề và List/Map Toggle */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                                 <Typography variant="body1" color="textSecondary" fontWeight={600}>
-                                    Tìm thấy {totalResults} địa điểm
+                                    {totalResults}件のスポットを表示
                                 </Typography>
 
                                 {/* Cập nhật nút LIST/MAP để quản lý state viewMode */}
@@ -221,7 +221,7 @@ const SearchResultPage = () => {
                                                                 {/* Nếu không có ảnh, hiển thị placeholder text */}
                                                                 {!imageUrl && (
                                                                     <Typography variant="caption" color="text.secondary">
-                                                                        No Image
+                                                                        画像なし
                                                                     </Typography>
                                                                 )}
                                                             </Box>
@@ -250,7 +250,7 @@ const SearchResultPage = () => {
                                                                             {spot.rating}
                                                                         </Typography>
                                                                         <Typography variant="caption" color="text.secondary">
-                                                                            ({spot.total_reviews} đánh giá)
+                                                                            ({spot.total_reviews} 件のレビュー)
                                                                         </Typography>
                                                                     </Stack>
                                                                 )}
@@ -287,7 +287,7 @@ const SearchResultPage = () => {
                                                                     onClick={() => navigate(`/places/${spot._id}`)}
                                                                     sx={{ mt: 1, textTransform: 'none' }}
                                                                 >
-                                                                    Xem chi tiết
+                                                                    詳細を見る
                                                                 </Button>
                                                             </Stack>
                                                         </Stack>
